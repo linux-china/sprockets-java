@@ -54,7 +54,7 @@ public class SprocketsServlet extends HttpServlet {
         String queryString = request.getQueryString();
         //output js with sprockets
         if (queryString != null && queryString.contains("sprockets")) {
-            JsNode jsNode = null;
+            JsNode jsNode;
             //dev env, output js with loader
             if ("dev".equals(env)) {
                 jsNode = parseNode(jsUri, request.getQueryString());
