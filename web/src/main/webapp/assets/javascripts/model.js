@@ -1,0 +1,4 @@
+//= require "common"
+function User() {
+
+}
