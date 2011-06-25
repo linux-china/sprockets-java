@@ -25,7 +25,7 @@ public class JsNode {
     /**
      * parent node
      */
-    private List<JsNode> parent;
+    private List<JsNode> parents;
 
     public String getUri() {
         return uri;
@@ -51,12 +51,61 @@ public class JsNode {
         this.content = content;
     }
 
-    public List<JsNode> getParent() {
-        return parent;
+    public List<JsNode> getParents() {
+        return parents;
     }
 
-    public void setParent(List<JsNode> parent) {
-        this.parent = parent;
+    public void setParents(List<JsNode> parents) {
+        this.parents = parents;
+    }
+
+    public void addParent(JsNode parent) {
+        if (this.parents == null) {
+            parents = new ArrayList<JsNode>();
+        }
+        parents.add(parent);
+    }
+
+    /**
+     * get linked parents
+     *
+     * @return linked parents
+     */
+    public List<JsNode> getLinkedParents() {
+        List<JsNode> linkedParents = new ArrayList<JsNode>();
+        for (JsNode parent : getParents()) {
+            linkedParents.addAll(0, getLinkedParents(parent));
+        }
+        return linkedParents;
+    }
+
+    /**
+     * get linkd parents
+     *
+     * @param parent parent
+     * @return parent list
+     */
+    private List<JsNode> getLinkedParents(JsNode parent) {
+//        todo 要调整依赖关系
+        List<JsNode> linkedParents = new ArrayList<JsNode>();
+        if (parent != null) {
+            linkedParents.add(0, parent);
+            if (parent.getParents() != null && !parent.getParents().isEmpty()) {
+                for (JsNode jsNode : parent.getParents()) {
+                    linkedParents.addAll(0, getLinkedParents(jsNode));
+                }
+            }
+        }
+        return linkedParents;
+    }
+
+    /**
+     * repository js mark
+     *
+     * @return repository js mark
+     */
+    public boolean isRepositoryJs() {
+        return uri.startsWith("http://") || uri.startsWith("https://");
     }
 
     /**
