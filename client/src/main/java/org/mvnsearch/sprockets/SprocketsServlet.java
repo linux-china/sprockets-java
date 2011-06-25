@@ -62,6 +62,7 @@ public class SprocketsServlet extends HttpServlet {
                 for (JsNode linkedParent : linkedParents) {
                     out.println("document.write('<script type=\"text/javascript\" src=\"" + linkedParent.getUri() + "\"></script>');");
                 }
+                out.println("document.write('<script type=\"text/javascript\" src=\"" + jsUri + "\"></script>');");
             } else { //concat all js and output
                 jsNode = JsDependencyTree.getInstance().findNode(jsUri);
                 if (jsNode == null) {
@@ -110,6 +111,7 @@ public class SprocketsServlet extends HttpServlet {
      *
      * @param jsNode js node
      */
+    @SuppressWarnings({"ConstantConditions"})
     private void resolveParent(JsNode jsNode) {
         try {
             List<String> requireSentences = jsNode.getRequireSentences();
