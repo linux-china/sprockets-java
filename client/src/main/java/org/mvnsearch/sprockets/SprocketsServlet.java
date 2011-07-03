@@ -69,7 +69,7 @@ public class SprocketsServlet extends HttpServlet {
                 }
             } else { //concat all js and output
                 jsNode = JsDependencyTree.getInstance().findNode(jsUri);
-                if (jsNode == null) {
+                if (jsNode == null || queryString.equals(jsNode.getQueryString())) {
                     jsNode = parseNode(jsUri, request.getQueryString());
                     if (jsNode != null) {
                         JsDependencyTree.getInstance().addNode(jsNode);
