@@ -1,11 +1,14 @@
 package org.mvnsearch.sprockets;
 
+import com.yahoo.platform.yui.compressor.JavaScriptCompressor;
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.mozilla.javascript.ErrorReporter;
+import org.mozilla.javascript.EvaluatorException;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -14,6 +17,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.List;
 
 /**
@@ -58,11 +63,10 @@ public class SprocketsServlet extends HttpServlet {
             //dev env, output js with loader
             if ("dev".equals(env)) {
                 jsNode = parseNode(jsUri, request.getQueryString());
-                List<JsNode> linkedParents = jsNode.getLinkedParents();
-                for (JsNode linkedParent : linkedParents) {
-                    out.println("document.write('<script type=\"text/javascript\" src=\"" + linkedParent.getUri() + "\"></script>');");
+                List<JsNode> nodePath = jsNode.getDepedencyNodes();
+                for (JsNode node : nodePath) {
+                    out.println("document.write('<script type=\"text/javascript\" src=\"" + node.getUri() + "\"></script>');");
                 }
-                out.println("document.write('<script type=\"text/javascript\" src=\"" + jsUri + "\"></script>');");
             } else { //concat all js and output
                 jsNode = JsDependencyTree.getInstance().findNode(jsUri);
                 if (jsNode == null) {
@@ -71,10 +75,31 @@ public class SprocketsServlet extends HttpServlet {
                         JsDependencyTree.getInstance().addNode(jsNode);
                     }
                 }
+                StringBuilder buffer = new StringBuilder();
                 if (jsNode != null) {
-                    for (JsNode node : jsNode.getLinkedParents()) {
-                        out.println(node.getContent());
+                    for (JsNode node : jsNode.getDepedencyNodes()) {
+                        buffer.append(node.getContent());
                     }
+                }
+                try {
+                    JavaScriptCompressor jsCompressor = new JavaScriptCompressor(new StringReader(buffer.toString()), new ErrorReporter() {
+                        public void warning(String s, String s1, int i, String s2, int i1) {
+
+                        }
+
+                        public void error(String s, String s1, int i, String s2, int i1) {
+
+                        }
+
+                        public EvaluatorException runtimeError(String s, String s1, int i, String s2, int i1) {
+                            return null;
+                        }
+                    });
+                    StringWriter jsWriter = new StringWriter();
+                    jsCompressor.compress(jsWriter, -1, true, false, true, false);
+                    out.print(jsWriter.toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         } else { // plain js
@@ -98,6 +123,7 @@ public class SprocketsServlet extends HttpServlet {
             jsNode.setUri(jsUri);
             jsNode.setQueryString(queryString);
             jsNode.setContent(IOUtils.toString(getServletContext().getResourceAsStream(jsUri)));
+            JsDependencyTree.getInstance().addNode(jsNode);
             resolveParent(jsNode);
             return jsNode;
         } catch (Exception e) {
