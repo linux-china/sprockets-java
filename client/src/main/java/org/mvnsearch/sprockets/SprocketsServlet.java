@@ -4,16 +4,13 @@ import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -80,7 +77,7 @@ public class SprocketsServlet extends HttpServlet {
                 }
             }
         } else { // plain js
-            out.print(IOUtils.toString(getServletContext().getResourceAsStream(jsUri)));
+            out.print(readContentFromInputStream(getServletContext().getResourceAsStream(jsUri)));
         }
         out.flush();
         out.close();
@@ -99,7 +96,7 @@ public class SprocketsServlet extends HttpServlet {
             JsNode jsNode = new JsNode();
             jsNode.setUri(jsUri);
             jsNode.setQueryString(queryString);
-            jsNode.setContent(IOUtils.toString(getServletContext().getResourceAsStream(jsUri)));
+            jsNode.setContent(readContentFromInputStream(getServletContext().getResourceAsStream(jsUri)));
             JsDependencyTree.getInstance().addNode(jsNode);
             resolveParent(jsNode);
             return jsNode;
@@ -124,7 +121,7 @@ public class SprocketsServlet extends HttpServlet {
                     String jsUri = null;
                     //加载本地文件
                     if (path.startsWith("\"") || path.startsWith("'")) {
-                        jsUri = FilenameUtils.getPath(jsNode.getUri()) + trimQuote(path) + ".js";
+                        jsUri = getFilePath(jsNode.getUri()) + trimQuote(path) + ".js";
                     } else if (path.startsWith("<")) { //加载库文件
                         jsUri = repository + "/" + trimQuote(path) + ".js";
                         //如果含空格，表示指定版本啦
@@ -144,7 +141,7 @@ public class SprocketsServlet extends HttpServlet {
                                 parent.setContent(getUriText(parent.getUri()));
                             }
                         } else {
-                            parent.setContent(IOUtils.toString(getServletContext().getResourceAsStream(parent.getUri())));
+                            parent.setContent(readContentFromInputStream(getServletContext().getResourceAsStream(parent.getUri())));
                         }
                         jsNode.addParent(parent);
                         JsDependencyTree.getInstance().addNode(parent);
@@ -183,7 +180,7 @@ public class SprocketsServlet extends HttpServlet {
         try {
             GetMethod getMethod = new GetMethod(uri);
             createHttpClient().executeMethod(getMethod);
-            return IOUtils.toString(getMethod.getResponseBodyAsStream());
+            return readContentFromInputStream(getMethod.getResponseBodyAsStream());
         } catch (Exception e) {
             getServletContext().log("Failed to download text content:" + uri, e);
         }
@@ -203,5 +200,38 @@ public class SprocketsServlet extends HttpServlet {
         clientParams.setParameter("http.connection-manager.timeout", 3000L); //3 seconds waiting to get connection from http connection manager
         clientParams.setParameter("http.method.retry-handler", new DefaultHttpMethodRetryHandler()); // if failed, try 3
         return clientTemp;
+    }
+
+    /**
+     * read content from input stream
+     *
+     * @param inputStream input stream
+     * @return string content
+     * @throws IOException io exception
+     */
+    public String readContentFromInputStream(InputStream inputStream) throws IOException {
+        StringWriter sw = new StringWriter();
+        InputStreamReader inputReader = new InputStreamReader(inputStream);
+        int DEFAULT_BUFFER_SIZE = 1024 * 4;
+        char[] buffer = new char[DEFAULT_BUFFER_SIZE];
+        int n;
+        while (-1 != (n = inputReader.read(buffer))) {
+            sw.write(buffer, 0, n);
+        }
+        return sw.toString();
+    }
+
+    /**
+     * get file path from file name
+     *
+     * @param fileName file name with path included
+     * @return file path
+     */
+    public String getFilePath(String fileName) {
+        if (fileName.contains("/")) {
+            return fileName.substring(0, fileName.lastIndexOf("/")+1);
+        } else {
+            return "";
+        }
     }
 }
