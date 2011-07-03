@@ -21,6 +21,10 @@ public class JsNode {
      */
     private String content;
     /**
+     * compressed content
+     */
+    private String compressedContent;
+    /**
      * parent node
      */
     private List<JsNode> parents;
@@ -47,6 +51,14 @@ public class JsNode {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getCompressedContent() {
+        return compressedContent;
+    }
+
+    public void setCompressedContent(String compressedContent) {
+        this.compressedContent = compressedContent;
     }
 
     public List<JsNode> getParents() {
@@ -157,5 +169,7 @@ public class JsNode {
         }
         return requireSentences;
     }
+
+
 
 }
