@@ -77,7 +77,7 @@ public class JsNode {
     public List<JsNode> getDepedencyNodes() {
         //dependencies path
         Map<Integer, List<JsNode>> dependenciesPath = new HashMap<Integer, List<JsNode>>();
-        if (!getParents().isEmpty()) {
+        if (getParents() != null && !getParents().isEmpty()) {
             fillNodePath(dependenciesPath, getParents(), 1);
         }
         List<String> nodeUriList = new ArrayList<String>();
