@@ -1,8 +1,6 @@
 package org.mvnsearch.sprockets;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * javascript node
@@ -59,6 +57,11 @@ public class JsNode {
         this.parents = parents;
     }
 
+    /**
+     * add parent node
+     *
+     * @param parent parent node
+     */
     public void addParent(JsNode parent) {
         if (this.parents == null) {
             parents = new ArrayList<JsNode>();
@@ -67,36 +70,54 @@ public class JsNode {
     }
 
     /**
-     * get linked parents
+     * get dependency nodes, first node's index is 0
      *
-     * @return linked parents
+     * @return dependency nodes
      */
-    public List<JsNode> getLinkedParents() {
-        List<JsNode> linkedParents = new ArrayList<JsNode>();
-        for (JsNode parent : getParents()) {
-            linkedParents.addAll(0, getLinkedParents(parent));
+    public List<JsNode> getDepedencyNodes() {
+        //dependencies path
+        Map<Integer, List<JsNode>> dependenciesPath = new HashMap<Integer, List<JsNode>>();
+        if (!getParents().isEmpty()) {
+            fillNodePath(dependenciesPath, getParents(), 1);
         }
-        return linkedParents;
-    }
-
-    /**
-     * get linkd parents
-     *
-     * @param parent parent
-     * @return parent list
-     */
-    private List<JsNode> getLinkedParents(JsNode parent) {
-//        todo 要调整依赖关系
-        List<JsNode> linkedParents = new ArrayList<JsNode>();
-        if (parent != null) {
-            linkedParents.add(0, parent);
-            if (parent.getParents() != null && !parent.getParents().isEmpty()) {
-                for (JsNode jsNode : parent.getParents()) {
-                    linkedParents.addAll(0, getLinkedParents(jsNode));
+        List<String> nodeUriList = new ArrayList<String>();
+        nodeUriList.add(uri);
+        if (!dependenciesPath.isEmpty()) {
+            for (int i = 1; i <= dependenciesPath.size(); i++) {
+                List<JsNode> jsNodes = dependenciesPath.get(i);
+                for (JsNode jsNode : jsNodes) {
+                    if (!nodeUriList.contains(jsNode.getUri())) {
+                        nodeUriList.add(jsNode.getUri());
+                    }
                 }
             }
         }
-        return linkedParents;
+        List<JsNode> nodes = new ArrayList<JsNode>();
+        for (int i = nodeUriList.size() - 1; i >= 0; i--) {
+            nodes.add(JsDependencyTree.getInstance().findNode(nodeUriList.get(i)));
+        }
+        return nodes;
+    }
+
+    /**
+     * fill node depdency path info
+     *
+     * @param nodePath node path
+     * @param parents  parents
+     * @param sequence path sequence, start from 1
+     */
+    private void fillNodePath(Map<Integer, List<JsNode>> nodePath, List<JsNode> parents, Integer sequence) {
+        if (!parents.isEmpty() && sequence < 100) {
+            nodePath.put(sequence, parents);
+            List<JsNode> nodes = new ArrayList<JsNode>();
+            for (JsNode parent : parents) {
+                List<JsNode> tempParents = parent.getParents();
+                if (tempParents != null && !tempParents.isEmpty()) {
+                    nodes.addAll(tempParents);
+                }
+            }
+            fillNodePath(nodePath, nodes, sequence + 1);
+        }
     }
 
     /**
